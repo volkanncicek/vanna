@@ -31,21 +31,31 @@ class PG_VectorStore(VannaBase):
             from langchain_huggingface import HuggingFaceEmbeddings
             self.embedding_function = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
+        if config and "table_schema" in config:
+            self.table_schema = config.get("table_schema")
+        else:
+            self.table_schema = "public"
+
         self.sql_collection = PGVector(
             embeddings=self.embedding_function,
             collection_name="sql",
             connection=self.connection_string,
+            table_schema=self.table_schema,
         )
+
         self.ddl_collection = PGVector(
             embeddings=self.embedding_function,
             collection_name="ddl",
             connection=self.connection_string,
+            table_schema=self.table_schema,
         )
         self.documentation_collection = PGVector(
             embeddings=self.embedding_function,
             collection_name="documentation",
             connection=self.connection_string,
+            table_schema=self.table_schema,
         )
+
 
     def add_question_sql(self, question: str, sql: str, **kwargs) -> str:
         question_sql_json = json.dumps(
