@@ -152,8 +152,8 @@ class PG_VectorStore(VannaBase):
         # Establishing the connection
         engine = create_engine(self.connection_string)
 
-        # Querying the 'langchain_pg_embedding' table
-        query_embedding = "SELECT cmetadata, document FROM langchain_pg_embedding"
+        # Querying the 'langchain_pg_embedding' table with schema
+        query_embedding = f"SELECT cmetadata, document FROM {self.table_schema}.langchain_pg_embedding"
         df_embedding = pd.read_sql(query_embedding, engine)
 
         # List to accumulate the processed rows
@@ -196,10 +196,10 @@ class PG_VectorStore(VannaBase):
         # Create the database engine
         engine = create_engine(self.connection_string)
 
-        # SQL DELETE statement
+        # SQL DELETE statement with schema
         delete_statement = text(
-            """
-            DELETE FROM langchain_pg_embedding
+            f"""
+            DELETE FROM {self.table_schema}.langchain_pg_embedding
             WHERE cmetadata ->> 'id' = :id
         """
         )
@@ -231,10 +231,10 @@ class PG_VectorStore(VannaBase):
             logging.info("Invalid collection name. Choose from 'ddl', 'sql', or 'documentation'.")
             return False
 
-        # SQL query to delete rows based on the condition
+        # SQL query to delete rows based on the condition, with schema
         query = text(
             f"""
-            DELETE FROM langchain_pg_embedding
+            DELETE FROM {self.table_schema}.langchain_pg_embedding
             WHERE cmetadata->>'id' LIKE '%{suffix}'
         """
         )
