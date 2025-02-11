@@ -15,26 +15,22 @@ from ..types import TrainingPlan, TrainingPlanItem
 
 class PG_VectorStore(VannaBase):
     def __init__(self, config=None):
-        if not config or "connection_string" not in config:
-            raise ValueError(
-                "A valid 'config' dictionary with a 'connection_string' is required.")
-
         VannaBase.__init__(self, config=config)
+    
+        config = config or {}
+    
+        if "connection_string" not in config:
+            raise ValueError("A valid 'config' dictionary with a 'connection_string' is required.")
 
-        if config and "connection_string" in config:
-            self.connection_string = config.get("connection_string")
-            self.n_results = config.get("n_results", 10)
+        self.connection_string = config.get("connection_string")
+        self.n_results = config.get("n_results", 10)
 
-        if config and "embedding_function" in config:
-            self.embedding_function = config.get("embedding_function")
-        else:
+        self.embedding_function = config.get("embedding_function")
+        if not self.embedding_function:
             from langchain_huggingface import HuggingFaceEmbeddings
             self.embedding_function = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
-        if config and "table_schema" in config:
-            self.table_schema = config.get("table_schema")
-        else:
-            self.table_schema = "public"
+        self.table_schema = config.get("table_schema", "public")
 
         self.sql_collection = PGVector(
             embeddings=self.embedding_function,
@@ -58,38 +54,22 @@ class PG_VectorStore(VannaBase):
 
 
     def add_question_sql(self, question: str, sql: str, **kwargs) -> str:
-        question_sql_json = json.dumps(
-            {
-                "question": question,
-                "sql": sql,
-            },
-            ensure_ascii=False,
-        )
-        id = str(uuid.uuid4()) + "-sql"
+        _id = str(uuid.uuid4()) + "-sql"
+        question_sql_json = json.dumps({"question": question, "sql": sql}, ensure_ascii=False)
         createdat = kwargs.get("createdat")
-        doc = Document(
-            page_content=question_sql_json,
-            metadata={"id": id, "createdat": createdat},
-        )
+        doc = Document(page_content=question_sql_json, metadata={"id": _id, "createdat": createdat})
         self.sql_collection.add_documents([doc], ids=[doc.metadata["id"]])
-
-        return id
+        return _id
 
     def add_ddl(self, ddl: str, **kwargs) -> str:
         _id = str(uuid.uuid4()) + "-ddl"
-        doc = Document(
-            page_content=ddl,
-            metadata={"id": _id},
-        )
+        doc = Document(page_content=ddl,metadata={"id": _id})
         self.ddl_collection.add_documents([doc], ids=[doc.metadata["id"]])
         return _id
 
     def add_documentation(self, documentation: str, **kwargs) -> str:
         _id = str(uuid.uuid4()) + "-doc"
-        doc = Document(
-            page_content=documentation,
-            metadata={"id": _id},
-        )
+        doc = Document(page_content=documentation, metadata={"id": _id})
         self.documentation_collection.add_documents([doc], ids=[doc.metadata["id"]])
         return _id
 
