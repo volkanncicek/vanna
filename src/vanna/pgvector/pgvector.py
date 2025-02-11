@@ -124,20 +124,26 @@ class PG_VectorStore(VannaBase):
         documentation: str | None = None,
         plan: TrainingPlan | None = None,
         createdat: str | None = None,
-    ):
-        if question and not sql:
-            raise ValidationError("Please provide a SQL query.")
-
+    ):  
+        
+        if sql and question:
+            return self.add_question_sql(question=question, sql=sql, createdat=createdat)
+        
         if documentation:
             logging.info(f"Adding documentation: {documentation}")
             return self.add_documentation(documentation)
-
-        if sql and question:
+        
+        if sql:
+            question = self.generate_question(sql)
+            logging.info(f"Question generated with sql: {question}\nAdding SQL...")
             return self.add_question_sql(question=question, sql=sql, createdat=createdat)
-
+        
         if ddl:
             logging.info(f"Adding ddl: {ddl}")
             return self.add_ddl(ddl)
+        
+        if question:
+            raise ValidationError("Please provide a SQL query.")
 
         if plan:
             for item in plan._plan:
