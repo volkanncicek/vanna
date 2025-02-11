@@ -1805,23 +1805,26 @@ class VannaBase(ABC):
             plan (TrainingPlan): The training plan to train on.
         """
 
-        if question and not sql:
-            raise ValidationError("Please also provide a SQL query")
+        if sql and question:  # Handle case where both are provided
+            return self.add_question_sql(question=question, sql=sql)
 
         if documentation:
             print("Adding documentation....")
             return self.add_documentation(documentation)
 
-        if sql:
-            if question is None:
-                question = self.generate_question(sql)
-                print("Question generated with sql:", question, "\nAdding SQL...")
-            return self.add_question_sql(question=question, sql=sql)
 
+        if sql:  # Handle case where only sql is provided
+            question = self.generate_question(sql)
+            print("Question generated with sql:", question, "\nAdding SQL...")
+            return self.add_question_sql(question=question, sql=sql)
+        
         if ddl:
             print("Adding ddl:", ddl)
             return self.add_ddl(ddl)
 
+        if question:  # Handle case where only question is provided
+            raise ValidationError("Please also provide a SQL query")
+        
         if plan:
             for item in plan._plan:
                 if item.item_type == TrainingPlanItem.ITEM_TYPE_DDL:
