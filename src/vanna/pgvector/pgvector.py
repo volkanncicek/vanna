@@ -1,6 +1,5 @@
 import ast
 import json
-import logging
 import uuid
 
 import pandas as pd
@@ -108,16 +107,16 @@ class PG_VectorStore(VannaBase):
             return self.add_question_sql(question=question, sql=sql)
         
         if documentation:
-            logging.info(f"Adding documentation: {documentation}")
+            print(f"Adding documentation: {documentation}")
             return self.add_documentation(documentation)
         
         if sql:
             question = self.generate_question(sql)
-            logging.info(f"Question generated with sql: {question}\nAdding SQL...")
+            print(f"Question generated with sql: {question}\nAdding SQL...")
             return self.add_question_sql(question=question, sql=sql)
         
         if ddl:
-            logging.info(f"Adding ddl: {ddl}")
+            print(f"Adding ddl: {ddl}")
             return self.add_ddl(ddl)
         
         if question:
@@ -156,14 +155,14 @@ class PG_VectorStore(VannaBase):
                     question = doc_dict.get("question")
                     content = doc_dict.get("sql")
                 except (ValueError, SyntaxError):
-                    logging.info(f"Skipping row with custom_id {custom_id} due to parsing error.")
+                    print(f"Skipping row with custom_id {custom_id} due to parsing error.")
                     continue
             elif training_data_type in ["documentation", "ddl"]:
                 question = None  # Default value for question
                 content = document
             else:
                 # If the suffix is not recognized, skip this row
-                logging.info(f"Skipping row with custom_id {custom_id} due to unrecognized training data type.")
+                print(f"Skipping row with custom_id {custom_id} due to unrecognized training data type.")
                 continue
 
             # Append the processed data to the list
@@ -200,7 +199,7 @@ class PG_VectorStore(VannaBase):
                     return result.rowcount > 0
                 except Exception as e:
                     # Rollback the transaction in case of error
-                    logging.error(f"An error occurred: {e}")
+                    print(f"An error occurred: {e}")
                     transaction.rollback()
                     return False
 
@@ -212,7 +211,7 @@ class PG_VectorStore(VannaBase):
         suffix = suffix_map.get(collection_name)
 
         if not suffix:
-            logging.info("Invalid collection name. Choose from 'ddl', 'sql', or 'documentation'.")
+            print("Invalid collection name. Choose from 'ddl', 'sql', or 'documentation'.")
             return False
 
         # SQL query to delete rows based on the condition, with schema
@@ -230,16 +229,16 @@ class PG_VectorStore(VannaBase):
                     result = connection.execute(query)
                     transaction.commit()  # Explicitly commit the transaction
                     if result.rowcount > 0:
-                        logging.info(
+                        print(
                             f"Deleted {result.rowcount} rows from "
                             f"langchain_pg_embedding where collection is {collection_name}."
                         )
                         return True
                     else:
-                        logging.info(f"No rows deleted for collection {collection_name}.")
+                        print(f"No rows deleted for collection {collection_name}.")
                         return False
                 except Exception as e:
-                    logging.error(f"An error occurred: {e}")
+                    print(f"An error occurred: {e}")
                     transaction.rollback()  # Rollback in case of error
                     return False
 
