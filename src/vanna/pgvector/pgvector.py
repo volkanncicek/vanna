@@ -1,6 +1,5 @@
 import ast
 import json
-import uuid
 
 import pandas as pd
 from langchain_core.documents import Document
@@ -10,7 +9,7 @@ from sqlalchemy import create_engine, text
 from .. import ValidationError
 from ..base import VannaBase
 from ..types import TrainingPlan, TrainingPlanItem
-
+from ..utils import deterministic_uuid
 
 class PG_VectorStore(VannaBase):
     def __init__(self, config=None):
@@ -51,22 +50,21 @@ class PG_VectorStore(VannaBase):
             table_schema=self.table_schema,
         )
 
-
     def add_question_sql(self, question: str, sql: str, **kwargs) -> str:
-        _id = str(uuid.uuid4()) + "-sql"
         question_sql_json = json.dumps({"question": question, "sql": sql}, ensure_ascii=False)
+        _id = deterministic_uuid(question_sql_json) + "-sql"
         doc = Document(page_content=question_sql_json, metadata={"id": _id})
         self.sql_collection.add_documents([doc], ids=[doc.metadata["id"]])
         return _id
 
     def add_ddl(self, ddl: str, **kwargs) -> str:
-        _id = str(uuid.uuid4()) + "-ddl"
-        doc = Document(page_content=ddl,metadata={"id": _id})
+        _id = deterministic_uuid(ddl) + "-ddl"
+        doc = Document(page_content=ddl, metadata={"id": _id})
         self.ddl_collection.add_documents([doc], ids=[doc.metadata["id"]])
         return _id
 
     def add_documentation(self, documentation: str, **kwargs) -> str:
-        _id = str(uuid.uuid4()) + "-doc"
+        _id = deterministic_uuid(documentation) + "-doc"
         doc = Document(page_content=documentation, metadata={"id": _id})
         self.documentation_collection.add_documents([doc], ids=[doc.metadata["id"]])
         return _id
@@ -104,6 +102,7 @@ class PG_VectorStore(VannaBase):
     ):  
         
         if sql and question:
+            print(f"Adding question: {question} and sql: {sql}")
             return self.add_question_sql(question=question, sql=sql)
         
         if documentation:
