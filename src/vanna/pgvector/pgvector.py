@@ -56,8 +56,7 @@ class PG_VectorStore(VannaBase):
     def add_question_sql(self, question: str, sql: str, **kwargs) -> str:
         _id = str(uuid.uuid4()) + "-sql"
         question_sql_json = json.dumps({"question": question, "sql": sql}, ensure_ascii=False)
-        createdat = kwargs.get("createdat")
-        doc = Document(page_content=question_sql_json, metadata={"id": _id, "createdat": createdat})
+        doc = Document(page_content=question_sql_json, metadata={"id": _id})
         self.sql_collection.add_documents([doc], ids=[doc.metadata["id"]])
         return _id
 
@@ -103,11 +102,10 @@ class PG_VectorStore(VannaBase):
         ddl: str | None = None,
         documentation: str | None = None,
         plan: TrainingPlan | None = None,
-        createdat: str | None = None,
     ):  
         
         if sql and question:
-            return self.add_question_sql(question=question, sql=sql, createdat=createdat)
+            return self.add_question_sql(question=question, sql=sql)
         
         if documentation:
             logging.info(f"Adding documentation: {documentation}")
@@ -116,7 +114,7 @@ class PG_VectorStore(VannaBase):
         if sql:
             question = self.generate_question(sql)
             logging.info(f"Question generated with sql: {question}\nAdding SQL...")
-            return self.add_question_sql(question=question, sql=sql, createdat=createdat)
+            return self.add_question_sql(question=question, sql=sql)
         
         if ddl:
             logging.info(f"Adding ddl: {ddl}")
