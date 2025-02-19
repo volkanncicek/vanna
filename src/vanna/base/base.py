@@ -1778,11 +1778,11 @@ class VannaBase(ABC):
 
     def train(
         self,
-        question: str = None,
-        sql: str = None,
-        ddl: str = None,
-        documentation: str = None,
-        plan: TrainingPlan = None,
+        question: str|None = None,
+        sql: str|None = None,
+        ddl: str|None = None,
+        documentation: str|None = None,
+        plan: TrainingPlan|None = None,
     ) -> str:
         """
         **Example:**
@@ -1805,25 +1805,25 @@ class VannaBase(ABC):
             plan (TrainingPlan): The training plan to train on.
         """
 
-        if sql and question:  # Handle case where both are provided
+        if sql and question:
+            print(f"Adding question: {question} and sql: {sql}")
             return self.add_question_sql(question=question, sql=sql)
 
         if documentation:
-            print("Adding documentation....")
+            print(f"Adding documentation: {documentation}")
             return self.add_documentation(documentation)
 
-
-        if sql:  # Handle case where only sql is provided
+        if sql:
             question = self.generate_question(sql)
-            print("Question generated with sql:", question, "\nAdding SQL...")
+            print(f"Question generated with sql: {question}\nAdding SQL...")
             return self.add_question_sql(question=question, sql=sql)
         
         if ddl:
-            print("Adding ddl:", ddl)
+            print(f"Adding ddl: {ddl}")
             return self.add_ddl(ddl)
 
-        if question:  # Handle case where only question is provided
-            raise ValidationError("Please also provide a SQL query")
+        if question:
+            raise ValidationError("Please provide a SQL query.")
         
         if plan:
             for item in plan._plan:
