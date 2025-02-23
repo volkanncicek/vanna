@@ -741,6 +741,21 @@ class VannaBase(ABC):
 
     # ----------------- Connect to Any Database to run the Generated SQL ----------------- #
 
+def _get_required_env_var(self, env_var_name: str, var_description: str) -> str:
+        """Helper function to get required environment variables"""
+        env_var_value = os.getenv(env_var_name)
+        if not env_var_value:
+            raise ImproperlyConfigured(f"Please set your {var_description}")
+        return env_var_value
+
+    def _get_required_env_var_as_int(self, env_var_name: str, var_description: str) -> int:
+        """Helper function to get required integer environment variables"""
+        env_var_value = self._get_required_env_var(env_var_name, var_description)
+        try:
+            return int(env_var_value)
+        except ValueError:
+            raise ImproperlyConfigured(f"{var_description} must be an integer")
+
     def connect_to_snowflake(
         self,
         account: str,
@@ -759,37 +774,12 @@ class VannaBase(ABC):
                 " \npip install vanna[snowflake]"
             )
 
-        if username == "my-username":
-            username_env = os.getenv("SNOWFLAKE_USERNAME")
-
-            if username_env is not None:
-                username = username_env
-            else:
-                raise ImproperlyConfigured("Please set your Snowflake username.")
-
-        if password == "mypassword":
-            password_env = os.getenv("SNOWFLAKE_PASSWORD")
-
-            if password_env is not None:
-                password = password_env
-            else:
-                raise ImproperlyConfigured("Please set your Snowflake password.")
-
-        if account == "my-account":
-            account_env = os.getenv("SNOWFLAKE_ACCOUNT")
-
-            if account_env is not None:
-                account = account_env
-            else:
-                raise ImproperlyConfigured("Please set your Snowflake account.")
-
-        if database == "my-database":
-            database_env = os.getenv("SNOWFLAKE_DATABASE")
-
-            if database_env is not None:
-                database = database_env
-            else:
-                raise ImproperlyConfigured("Please set your Snowflake database.")
+        username = username or self._get_required_env_var("SNOWFLAKE_USERNAME", "Snowflake username")
+        password = password or self._get_required_env_var("SNOWFLAKE_PASSWORD", "Snowflake password")
+        account = account or self._get_required_env_var("SNOWFLAKE_ACCOUNT", "Snowflake account")
+        database = database or self._get_required_env_var("SNOWFLAKE_DATABASE", "Snowflake database")
+        role = role or self._get_required_env_var("SNOWFLAKE_ROLE", "Snowflake role")
+        warehouse = warehouse or self._get_required_env_var("SNOWFLAKE_WAREHOUSE", "Snowflake warehouse")
 
         conn = snowflake.connector.connect(
             user=username,
@@ -900,35 +890,11 @@ class VannaBase(ABC):
                 " run command: \npip install vanna[postgres]"
             )
 
-        if not host:
-            host = os.getenv("HOST")
-
-        if not host:
-            raise ImproperlyConfigured("Please set your postgres host")
-
-        if not dbname:
-            dbname = os.getenv("DATABASE")
-
-        if not dbname:
-            raise ImproperlyConfigured("Please set your postgres database")
-
-        if not user:
-            user = os.getenv("PG_USER")
-
-        if not user:
-            raise ImproperlyConfigured("Please set your postgres user")
-
-        if not password:
-            password = os.getenv("PASSWORD")
-
-        if not password:
-            raise ImproperlyConfigured("Please set your postgres password")
-
-        if not port:
-            port = os.getenv("PORT")
-
-        if not port:
-            raise ImproperlyConfigured("Please set your postgres port")
+        host = host or self._get_required_env_var("HOST", "postgres host")
+        dbname = dbname or self._get_required_env_var("DATABASE", "postgres database")
+        user = user or self._get_required_env_var("PG_USER", "postgres user")
+        password = password or self._get_required_env_var("PASSWORD", "postgres password") 
+        port = port or self._get_required_env_var_as_int("PORT", "postgres port")
 
         conn = None
 
@@ -1006,35 +972,11 @@ class VannaBase(ABC):
                 " run command: \npip install PyMySQL"
             )
 
-        if not host:
-            host = os.getenv("HOST")
-
-        if not host:
-            raise ImproperlyConfigured("Please set your MySQL host")
-
-        if not dbname:
-            dbname = os.getenv("DATABASE")
-
-        if not dbname:
-            raise ImproperlyConfigured("Please set your MySQL database")
-
-        if not user:
-            user = os.getenv("USER")
-
-        if not user:
-            raise ImproperlyConfigured("Please set your MySQL user")
-
-        if not password:
-            password = os.getenv("PASSWORD")
-
-        if not password:
-            raise ImproperlyConfigured("Please set your MySQL password")
-
-        if not port:
-            port = os.getenv("PORT")
-
-        if not port:
-            raise ImproperlyConfigured("Please set your MySQL port")
+        host = host or self._get_required_env_var("HOST", "MySQL host")
+        dbname = dbname or self._get_required_env_var("DATABASE", "MySQL database")
+        user = user or self._get_required_env_var("USER", "MySQL user")
+        password = password or self._get_required_env_var("PASSWORD", "MySQL password")
+        port = port or self._get_required_env_var_as_int("PORT", "MySQL port")
 
         conn = None
 
@@ -1076,6 +1018,21 @@ class VannaBase(ABC):
         self.run_sql_is_set = True
         self.run_sql = run_sql_mysql
 
+    def _get_required_env(self, env_var: str, display_name: str) -> str:
+        """Helper function to get required environment variables"""
+        value = os.getenv(env_var)
+        if not value:
+            raise ImproperlyConfigured(f"Please set your {display_name}")
+        return value
+
+    def _get_required_env_int(self, env_var: str, display_name: str) -> int:
+        """Helper function to get required integer environment variables"""
+        value = self._get_required_env(env_var, display_name)
+        try:
+            return int(value)
+        except ValueError:
+            raise ImproperlyConfigured(f"{display_name} must be an integer")
+
     def connect_to_clickhouse(
         self,
         host: str = None,
@@ -1094,35 +1051,11 @@ class VannaBase(ABC):
                 " run command: \npip install clickhouse_connect"
             )
 
-        if not host:
-            host = os.getenv("HOST")
-
-        if not host:
-            raise ImproperlyConfigured("Please set your ClickHouse host")
-
-        if not dbname:
-            dbname = os.getenv("DATABASE")
-
-        if not dbname:
-            raise ImproperlyConfigured("Please set your ClickHouse database")
-
-        if not user:
-            user = os.getenv("USER")
-
-        if not user:
-            raise ImproperlyConfigured("Please set your ClickHouse user")
-
-        if not password:
-            password = os.getenv("PASSWORD")
-
-        if not password:
-            raise ImproperlyConfigured("Please set your ClickHouse password")
-
-        if not port:
-            port = os.getenv("PORT")
-
-        if not port:
-            raise ImproperlyConfigured("Please set your ClickHouse port")
+        host = host or self._get_required_env_var("HOST", "ClickHouse host")
+        dbname = dbname or self._get_required_env_var("DATABASE", "ClickHouse database") 
+        user = user or self._get_required_env_var("USER", "ClickHouse user")
+        password = password or self._get_required_env_var("PASSWORD", "ClickHouse password")
+        port = port or self._get_required_env_var_as_int("PORT", "ClickHouse port")
 
         conn = None
 
@@ -1188,23 +1121,9 @@ class VannaBase(ABC):
                 " run command: \npip install oracledb"
             )
 
-        if not dsn:
-            dsn = os.getenv("DSN")
-
-        if not dsn:
-            raise ImproperlyConfigured("Please set your Oracle dsn which should include host:port/sid")
-
-        if not user:
-            user = os.getenv("USER")
-
-        if not user:
-            raise ImproperlyConfigured("Please set your Oracle db user")
-
-        if not password:
-            password = os.getenv("PASSWORD")
-
-        if not password:
-            raise ImproperlyConfigured("Please set your Oracle db password")
+        user = user or self._get_required_env_var("USER", "Oracle db user")
+        password = password or self._get_required_env_var("PASSWORD", "Oracle db password")
+        dsn = dsn or self._get_required_env_var("DSN", "Oracle dsn which should include host:port/sid")
 
         conn = None
 
@@ -1276,11 +1195,7 @@ class VannaBase(ABC):
                 " \npip install vanna[bigquery]"
             )
 
-        if not project_id:
-            project_id = os.getenv("PROJECT_ID")
-
-        if not project_id:
-            raise ImproperlyConfigured("Please set your Google Cloud Project ID.")
+        project_id = project_id or self._get_required_env_var("PROJECT_ID", "Google Cloud Project ID")
 
         import sys
 
@@ -1472,32 +1387,11 @@ class VannaBase(ABC):
           " run command: \npip install pyhive"
         )
 
-      if not host:
-        host = os.getenv("PRESTO_HOST")
-
-      if not host:
-        raise ImproperlyConfigured("Please set your presto host")
-
-      if not catalog:
-        catalog = os.getenv("PRESTO_CATALOG")
-
-      if not catalog:
-        raise ImproperlyConfigured("Please set your presto catalog")
-
-      if not user:
-        user = os.getenv("PRESTO_USER")
-
-      if not user:
-        raise ImproperlyConfigured("Please set your presto user")
-
-      if not password:
-        password = os.getenv("PRESTO_PASSWORD")
-
-      if not port:
-        port = os.getenv("PRESTO_PORT")
-
-      if not port:
-        raise ImproperlyConfigured("Please set your presto port")
+        host = host or self._get_required_env_var("PRESTO_HOST", "presto host")
+        catalog = catalog or self._get_required_env_var("PRESTO_CATALOG", "presto catalog")
+        user = user or self._get_required_env_var("PRESTO_USER", "presto user") 
+        password = password or self._get_required_env_var("PRESTO_PASSWORD", "presto password")
+        port = port or self._get_required_env_var_as_int("PRESTO_PORT", "presto port")
 
       conn = None
 
@@ -1581,32 +1475,11 @@ class VannaBase(ABC):
           " run command: \npip install pyhive"
         )
 
-      if not host:
-        host = os.getenv("HIVE_HOST")
-
-      if not host:
-        raise ImproperlyConfigured("Please set your hive host")
-
-      if not dbname:
-        dbname = os.getenv("HIVE_DATABASE")
-
-      if not dbname:
-        raise ImproperlyConfigured("Please set your hive database")
-
-      if not user:
-        user = os.getenv("HIVE_USER")
-
-      if not user:
-        raise ImproperlyConfigured("Please set your hive user")
-
-      if not password:
-        password = os.getenv("HIVE_PASSWORD")
-
-      if not port:
-        port = os.getenv("HIVE_PORT")
-
-      if not port:
-        raise ImproperlyConfigured("Please set your hive port")
+        host = host or self._get_required_env_var("HIVE_HOST", "hive host")
+        dbname = dbname or self._get_required_env_var("HIVE_DATABASE", "hive database")
+        user = user or self._get_required_env_var("HIVE_USER", "hive user")
+        password = password or self._get_required_env_var("HIVE_PASSWORD", "hive password")
+        port = port or self._get_required_env_var_as_int("HIVE_PORT", "hive port")
 
       conn = None
 
