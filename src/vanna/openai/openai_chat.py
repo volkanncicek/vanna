@@ -14,6 +14,7 @@ class OpenAI_Chat(VannaBase):
 
         # default parameters - can be overrided using config
         self.temperature = config.get("temperature", 0.7)
+        self.model = config.get("model", "gpt-4o-mini")
 
         # Raise exceptions for deprecated parameters
         for deprecated_param in ["api_type", "api_base", "api_version"]:
@@ -43,10 +44,9 @@ class OpenAI_Chat(VannaBase):
         return {"role": "assistant", "content": message}
 
     def generate_response(self, prompt, num_tokens):
-        model = self.config.get("model", "gpt-4o-mini")
-        print(f"Using model {model} for {num_tokens} tokens (approx)")
+        print(f"Using model {self.model} for {num_tokens} tokens (approx)")
         response = self.client.chat.completions.create(
-            model=model,
+            model=self.model,
             messages=prompt,
             stop=None,
             temperature=self.temperature,
