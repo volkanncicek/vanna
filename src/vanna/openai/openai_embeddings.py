@@ -34,7 +34,7 @@ class OpenAI_Embeddings(VannaBase):
     def generate_embedding(self, data: str, **kwargs) -> list[float]:
         if self.config is not None and "engine" in self.config:
             embedding = self.client.embeddings.create(
-                engine=self.config["engine"],
+                model=self.config["engine"],
                 input=data,
             )
         else:
@@ -43,4 +43,4 @@ class OpenAI_Embeddings(VannaBase):
                 input=data,
             )
 
-        return embedding.get("data")[0]["embedding"]
+        return embedding.data[0].embedding
