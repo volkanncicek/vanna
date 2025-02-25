@@ -1922,22 +1922,23 @@ def _get_required_env_var(self, env_var_name: str, var_description: str) -> str:
         return plan
 
     def get_plotly_figure(
-        self, plotly_code: str, df: pd.DataFrame, dark_mode: bool = True
-    ) -> plotly.graph_objs.Figure:
+        self, 
+        plotly_code: str,
+        df: pd.DataFrame, 
+        dark_mode: bool = True
+    ) -> Union[plotly.graph_objs.Figure, None]:
         """
         **Example:**
         ```python
-        fig = vn.get_plotly_figure(
-            plotly_code="fig = px.bar(df, x='name', y='salary')",
-            df=df
-        )
+        fig = vn.get_plotly_figure(plotly_code="fig = px.bar(df, x='name', y='salary')", df=df)
         fig.show()
         ```
         Get a Plotly figure from a dataframe and Plotly code.
 
         Args:
-            df (pd.DataFrame): The dataframe to use.
             plotly_code (str): The Plotly code to use.
+            df (pd.DataFrame): The dataframe to use.
+            dark_mode (bool): Whether to use dark mode.
 
         Returns:
             plotly.graph_objs.Figure: The Plotly figure.
@@ -1945,14 +1946,11 @@ def _get_required_env_var(self, env_var_name: str, var_description: str) -> str:
         ldict = {"df": df, "px": px, "go": go}
         try:
             exec(plotly_code, globals(), ldict)
-
             fig = ldict.get("fig", None)
         except Exception as e:
             # Inspect data types
             numeric_cols = df.select_dtypes(include=["number"]).columns.tolist()
-            categorical_cols = df.select_dtypes(
-                include=["object", "category"]
-            ).columns.tolist()
+            categorical_cols = df.select_dtypes(include=["object", "category"]).columns.tolist()
 
             # Decision-making for plot type
             if len(numeric_cols) >= 2:
