@@ -9,47 +9,54 @@ from ..exceptions import DependencyError
 
 class Ollama(VannaBase):
   def __init__(self, config=None):
+    VannaBase.__init__(self, config=config)
 
     try:
-      ollama = __import__("ollama")
+      import ollama
     except ImportError:
       raise DependencyError(
-        "You need to install required dependencies to execute this method, run command:"
-        " \npip install ollama"
+        "You need to install required dependencies to execute this method."
+        "\nRun the following command:\n"
+        "pip install ollama"
       )
 
-    if not config:
+    # Ensure config is a dictionary
+    self.config = config or {}
+
+    self.host = self.config.get("ollama_host", "http://localhost:11434")
+    if self.host is None:
+      raise ValueError("config must contain at least Ollama host")
+
+    self.model = self.config.get("model")
+    if self.model is None:
       raise ValueError("config must contain at least Ollama model")
-    if 'model' not in config.keys():
-      raise ValueError("config must contain at least Ollama model")
-    self.host = config.get("ollama_host", "http://localhost:11434")
-    self.model = config["model"]
+
     if ":" not in self.model:
       self.model += ":latest"
 
-    self.ollama_timeout = config.get("ollama_timeout", 240.0)
+    self.ollama_timeout = self.config.get("ollama_timeout", 240.0)
+    self.keep_alive = self.config.get("keep_alive", None)
+    self.ollama_options = self.config.get("options", {})
+    self.num_ctx = self.ollama_options.get("num_ctx", 2048)
 
     self.ollama_client = ollama.Client(self.host, timeout=Timeout(self.ollama_timeout))
-    self.keep_alive = config.get('keep_alive', None)
-    self.ollama_options = config.get('options', {})
-    self.num_ctx = self.ollama_options.get('num_ctx', 2048)
-    self.__pull_model_if_ne(self.ollama_client, self.model)
+    self.__pull_model_if_ne()
 
-  @staticmethod
-  def __pull_model_if_ne(ollama_client, model):
-    model_response = ollama_client.list()
-    model_lists = [model_element['model'] for model_element in
-                   model_response.get('models', [])]
-    if model not in model_lists:
-      ollama_client.pull(model)
+  def __pull_model_if_ne(self):
+    model_response = self.ollama_client.list()
+    model_lists = [model_element["model"] for model_element in model_response.get("models", [])]
+    if self.model not in model_lists:
+      # Ensure model is a string
+      model_name = str(self.model) if self.model is not None else ""
+      self.ollama_client.pull(model=model_name)
 
-  def system_message(self, message: str) -> any:
+  def system_message(self, message: str) -> dict:
     return {"role": "system", "content": message}
 
-  def user_message(self, message: str) -> any:
+  def user_message(self, message: str) -> dict:
     return {"role": "user", "content": message}
 
-  def assistant_message(self, message: str) -> any:
+  def assistant_message(self, message: str) -> dict:
     return {"role": "assistant", "content": message}
 
   def extract_sql(self, llm_response):
