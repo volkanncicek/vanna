@@ -3,6 +3,7 @@ import json
 
 import pandas as pd
 from langchain_core.documents import Document
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_postgres.vectorstores import PGVector
 from sqlalchemy import create_engine, text
 
@@ -11,21 +12,23 @@ from ..base import VannaBase
 from ..types import TrainingPlan, TrainingPlanItem
 from ..utils import deterministic_uuid
 
+
 class PG_VectorStore(VannaBase):
     def __init__(self, config=None):
         VannaBase.__init__(self, config=config)
-    
+
         config = config or {}
-    
+
         if "connection_string" not in config:
             raise ValueError("A valid 'config' dictionary with a 'connection_string' is required.")
 
-        self.connection_string = config.get("connection_string")
+        self.connection_string = config.get("connection_string", None)
+        if not self.connection_string:
+            raise ValidationError("No connection string provided")
         self.n_results = config.get("n_results", 10)
 
         self.embedding_function = config.get("embedding_function")
         if not self.embedding_function:
-            from langchain_huggingface import HuggingFaceEmbeddings
             self.embedding_function = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
         self.table_schema = config.get("table_schema", "public")
@@ -99,25 +102,25 @@ class PG_VectorStore(VannaBase):
         ddl: str | None = None,
         documentation: str | None = None,
         plan: TrainingPlan | None = None,
-    ):  
+    ):
         
         if sql and question:
             print(f"Adding question: {question} and sql: {sql}")
             return self.add_question_sql(question=question, sql=sql)
-        
+
         if documentation:
             print(f"Adding documentation: {documentation}")
             return self.add_documentation(documentation)
-        
+
         if sql:
             question = self.generate_question(sql)
             print(f"Question generated with sql: {question}\nAdding SQL...")
             return self.add_question_sql(question=question, sql=sql)
-        
+
         if ddl:
             print(f"Adding ddl: {ddl}")
             return self.add_ddl(ddl)
-        
+
         if question:
             raise ValidationError("Please provide a SQL query.")
 
@@ -165,9 +168,7 @@ class PG_VectorStore(VannaBase):
                 continue
 
             # Append the processed data to the list
-            processed_rows.append(
-                {"id": custom_id, "question": question, "content": content, "training_data_type": training_data_type}
-            )
+            processed_rows.append({"id": custom_id, "question": question, "content": content, "training_data_type": training_data_type})
 
         # Create a DataFrame from the list of processed rows
         df_processed = pd.DataFrame(processed_rows)
@@ -228,10 +229,7 @@ class PG_VectorStore(VannaBase):
                     result = connection.execute(query)
                     transaction.commit()  # Explicitly commit the transaction
                     if result.rowcount > 0:
-                        print(
-                            f"Deleted {result.rowcount} rows from "
-                            f"langchain_pg_embedding where collection is {collection_name}."
-                        )
+                        print(f"Deleted {result.rowcount} rows from langchain_pg_embedding where collection is {collection_name}.")
                         return True
                     else:
                         print(f"No rows deleted for collection {collection_name}.")
