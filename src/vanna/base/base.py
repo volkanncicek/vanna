@@ -741,7 +741,7 @@ class VannaBase(ABC):
 
     # ----------------- Connect to Any Database to run the Generated SQL ----------------- #
 
-def _get_required_env_var(self, env_var_name: str, var_description: str) -> str:
+    def _get_required_env_var(self, env_var_name: str, var_description: str) -> str:
         """Helper function to get required environment variables"""
         env_var_value = os.getenv(env_var_name)
         if not env_var_value:
